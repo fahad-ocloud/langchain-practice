@@ -1,20 +1,45 @@
 import {
+  getMultipleChoiceQuestions,
   listParserResponse,
   stringParserResponse,
-  structuredParserResponse,
   zodStructuredParserResponse,
 } from './ouputParsers/outputParser.js';
-import { chattingAI } from './retreivalChain.js';
+import { chattingAI } from './retrievalChain.js';
 
-// const response = await stringParserResponse('goat');
-// const response = await listParserResponse('SAD');
-// const response = await structuredParserResponse(
-//   'list of cars their company are bavarian Motor words'
-// );
-// const response = await zodStructuredParserResponse(
-//   'list of ingredients of making biryani'
-// );
+import express from 'express';
+import cors from 'cors';
 
-const response = await chattingAI();
+const port = 8080;
+const app = express();
+app.use(express.json());
+app.use(cors());
 
-console.log(response);
+app.get('/', async (req, res) => {
+  const response = await chattingAI();
+  res.send(response);
+});
+
+app.post('/getMultipleChoiceQuestion', async (req, res) => {
+  try {
+    const { subject, standard, limit } = req.body;
+    console.log(req.body);
+    if (!subject || !standard || !limit) {
+      return res.status(400).send({
+        error: 'Missing required fields: subject, standard, or limit',
+      });
+    }
+
+    const response = await getMultipleChoiceQuestions(standard, subject, limit);
+
+    res.status(200).send(response);
+  } catch (error) {
+    console.error('Error fetching questions:', error);
+    res
+      .status(500)
+      .send({ error: 'An error occurred while fetching questions' });
+  }
+});
+
+app.listen(port, () => {
+  console.log(`Example app listening on port ${port}`);
+});
